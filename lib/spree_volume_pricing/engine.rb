@@ -4,12 +4,13 @@ module SpreeVolumePricing
     isolate_namespace Spree
     engine_name 'spree_volume_pricing'
 
-    initializer 'spree_volume_pricing.preferences', before: 'spree.environment' do
-      Spree::AppConfiguration.class_eval do
-        preference :use_master_variant_volume_pricing, :boolean, default: false
-        preference :volume_pricing_role, :string, default: 'wholesale'
-        preference :volume_pricing_role_dropship, :string, default: 'dropship'
-      end
+
+    initializer 'spree_volume_pricing.environment', before: 'spree.environment' do |app|
+      require File.join(File.dirname(__FILE__), '../../app/models/spree_volume_pricing/configuration.rb')
+    end
+
+    initializer 'spree_volume_pricing.environment', before: :load_config_initializers do |_app|
+      SpreeVolumePricing::Config = SpreeVolumePricing::Configuration.new
     end
 
     def self.activate

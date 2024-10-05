@@ -1,9 +1,9 @@
 <tr class="volume_price fields">
-  <td>
-    <%= error_message_on(f.object, :name) %>
+  <td class="form-group">
     <%= f.text_field :name, size: 10, class: 'form-control' %>
+    <%= error_message_on(f.object, :name) %>
   </td>
-  <td>
+  <td class="form-group">
     <%= error_message_on(f.object, :discount_type) %>
     <%= f.select :discount_type, [
         ["#{Spree.t(:total_price)}", 'price'],
@@ -11,23 +11,26 @@
         ["#{Spree.t(:price_discount)}", 'dollar']
       ], { inlcude_blank: true }, class: 'select2' %>
   </td>
-  <td>
+  <td class="form-group">
     <%= error_message_on(f.object, :range) %>
     <%= f.text_field :range, size: 10, class: 'form-control' %>
   </td>
-  <td>
+  <td class="form-group">
     <%= error_message_on(f.object, :amount) %>
     <%= f.text_field :amount, size: 10, class: 'form-control' %>
   </td>
-  <td>
+  <td class="form-group">
     <%= error_message_on(f.object, :position) %>
     <%= f.text_field :position, size: 3, class: 'form-control' %>
   </td>
-  <td>
+  <td class="form-group">
     <%= error_message_on(f.object, :role_id) %>
-    <%= f.collection_select(:role_id, Spree::Role.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2' }) %>
+    <%= f.collection_select(:role_id, Spree::Role.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2-clear' }) %>
   </td>
-  <td class="actions">
+  <td>
+    <%= f.hidden_field :store_id, value: current_store.id %>
+  </td>
+  <td>
     <%= link_to_icon_remove_fields f %>
   </td>
 </tr>

@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
 
-gem 'spree', github: 'spree/spree', branch: 'master'
+gem 'rails', '7.1.3.4'
+
+spree_opts = '4.8.3'
+gem 'spree', spree_opts
 
 gemspec
