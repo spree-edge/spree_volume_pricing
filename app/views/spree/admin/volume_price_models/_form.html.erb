@@ -1,9 +1,77 @@
-<div data-hook="admin_inside_volume_price_model_form" class="form-group">
+<div>
   <%= f.field_container :name, class: ['form-group'] do %>
     <%= f.label :name, Spree.t(:name) %> <span class="required">*</span>
     <%= error_message_on :volume_price_model, :name, :class => 'error-message' %>
     <%= text_field :volume_price_model, :name, :class => 'form-control' %>
   <% end %>
 
-  <%= render 'spree/admin/volume_prices/edit_fields', f: f %>
+  <% content_for :page_actions do %>
+    <span id="new_add_volume_price" data-hook>
+      <%= button_link_to Spree.t(:add_volume_price), 'javascript:;', {
+          icon: 'add.svg',
+          :'data-target' => 'tbody#volume_prices',
+          class: 'btn-primary spree_add_fields',
+          id: 'add_volume_price'
+        } %>
+    </span>
+  <% end %>
+
+  <div class="card-header">
+    <h5><%= Spree.t(:volume_prices) %></h5>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th><%= Spree.t(:name) %></th>
+        <th><%= Spree.t(:discount_type) %></th>
+        <th><%= Spree.t(:range) %></th>
+        <th><%= Spree.t(:amount) %></th>
+        <th><%= Spree.t(:position) %></th>
+        <th><%= Spree.t(:role) %></th>
+        <th><%= Spree.t(:action) %></th>
+      </tr>
+    </thead>
+    <tbody id="volume_prices">
+      <%= f.fields_for :volume_prices do |vp_form| %>
+        <tr class="volume_price fields">
+          <td class="form-group">
+            <%= vp_form.text_field :name, size: 10, class: 'form-control' %>
+            <%= error_message_on(f.object, :name) %>
+          </td>
+          <td class="form-group">
+            <%= error_message_on(f.object, :discount_type) %>
+            <%= vp_form.select :discount_type, [
+                ["#{Spree.t(:total_price)}", 'price'],
+                ["#{Spree.t(:percent_discount)}", 'percent'],
+                ["#{Spree.t(:price_discount)}", 'dollar']
+              ], { inlcude_blank: true }, class: 'select2' %>
+          </td>
+          <td class="form-group">
+            <%= error_message_on(f.object, :range) %>
+            <%= vp_form.text_field :range, size: 10, class: 'form-control' %>
+          </td>
+          <td class="form-group">
+            <%= error_message_on(f.object, :amount) %>
+            <%= vp_form.text_field :amount, size: 10, class: 'form-control' %>
+          </td>
+          <td class="form-group">
+            <%= error_message_on(f.object, :position) %>
+            <%= vp_form.text_field :position, size: 3, class: 'form-control' %>
+          </td>
+          <td class="form-group">
+            <%= error_message_on(f.object, :role_id) %>
+            <%= vp_form.collection_select(:role_id, Spree::Role.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2-clear' }) %>
+          </td>
+          <td>
+            <%= vp_form.hidden_field :store_id, value: current_store.id %>
+          </td>
+          <td>
+            <%= link_to_icon_remove_fields vp_form %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <br/><br/>
 </div>

@@ -1,4 +1,4 @@
-<div class="row mx-1">
+<div class="border rounded bg-white m-2">
   <div class="col-12">
     <div class="card-header">
       <div class="row pb-0">
@@ -15,33 +15,66 @@
     </div>
   </div>
 
-  <div class="col-12">
-    <div class="table-responsive border rounded bg-white">
-      <table class="table">
-        <thead>
-          <tr>
-            <th><%= Spree.t(:name) %></th>
-            <th><%= Spree.t(:discount_type) %></th>
-            <th><%= Spree.t(:range) %></th>
-            <th><%= Spree.t(:amount) %></th>
-            <th><%= Spree.t(:position) %></th>
-            <th><%= Spree.t(:role) %></th>
-            <th><%= Spree.t(:action) %></th>
+  <div class="col-12"> 
+    <table class="table">
+      <thead>
+        <tr>
+          <th><%= Spree.t(:name) %></th>
+          <th><%= Spree.t(:discount_type) %></th>
+          <th><%= Spree.t(:range) %></th>
+          <th><%= Spree.t(:amount) %></th>
+          <th><%= Spree.t(:position) %></th>
+          <th><%= Spree.t(:role) %></th>
+          <th><%= Spree.t(:action) %></th>
+        </tr>
+      </thead>
+      <tbody id="volume_prices">
+        <%= f.fields_for :volume_prices, @variant.volume_prices.find_or_initialize_by(store_id: current_store.id) do |vp_form| %>
+          <tr class="volume_price fields">
+            <td class="form-group">
+              <%= vp_form.text_field :name, size: 10, class: 'form-control' %>
+              <%= error_message_on(f.object, :name) %>
+            </td>
+            <td class="form-group">
+              <%= error_message_on(f.object, :discount_type) %>
+              <%= vp_form.select :discount_type, [
+                  ["#{Spree.t(:total_price)}", 'price'],
+                  ["#{Spree.t(:percent_discount)}", 'percent'],
+                  ["#{Spree.t(:price_discount)}", 'dollar']
+                ], { inlcude_blank: true }, class: 'select2' %>
+            </td>
+            <td class="form-group">
+              <%= error_message_on(f.object, :range) %>
+              <%= vp_form.text_field :range, size: 10, class: 'form-control' %>
+            </td>
+            <td class="form-group">
+              <%= error_message_on(f.object, :amount) %>
+              <%= vp_form.text_field :amount, size: 10, class: 'form-control' %>
+            </td>
+            <td class="form-group">
+              <%= error_message_on(f.object, :position) %>
+              <%= vp_form.text_field :position, size: 3, class: 'form-control' %>
+            </td>
+            <td class="form-group">
+              <%= error_message_on(f.object, :role_id) %>
+              <%= vp_form.collection_select(:role_id, Spree::Role.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2-clear' }) %>
+            </td>
+            <td>
+              <%= vp_form.hidden_field :store_id, value: current_store.id %>
+            </td>
+            <td>
+              <%= link_to_icon_remove_fields vp_form %>
+            </td>
           </tr>
-        </thead>
-        <tbody id="volume_prices">
-          <%= f.fields_for :volume_prices, @variant.volume_prices.find_or_initialize_by(store_id: current_store.id) do |vp_form| %>
-            <%= render partial: 'spree/admin/volume_prices/volume_price_fields', locals: { f: vp_form } %>
-          <% end %>
-        </tbody>
-        <tbody id="volume_price_models">
-          <%= f.field_container :volume_price_model, class: ['form-group m-2 h4'] do %>
-            <%= f.label :volume_price_model_id, Spree.t(:select_volume_price_model), class: '' %>
-            <%= f.collection_select(:volume_price_model_ids, current_store.volume_price_models, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2', disabled: (cannot? :edit, Spree::VolumePriceModel) }) %>
-          <%= f.error_message_on :volume_price_model %>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
+        <% end %>
+      </tbody>
+      <tbody id="volume_price_models">
+        <%= f.field_container :volume_price_model, class: ['form-group m-2 h4'] do %>
+          <%= f.label :volume_price_model_id, Spree.t(:select_volume_price_model), class: '' %>
+          <%= f.collection_select(:volume_price_model_ids, current_store.volume_price_models, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2', disabled: (cannot? :edit, Spree::VolumePriceModel) }) %>
+        <%= f.error_message_on :volume_price_model %>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 </div>
