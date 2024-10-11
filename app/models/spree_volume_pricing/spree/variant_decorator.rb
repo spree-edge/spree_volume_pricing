@@ -6,124 +6,91 @@ module SpreeVolumePricing
         base.has_many :volume_prices, -> { order(position: :asc) }, dependent: :destroy
         base.has_many :model_volume_prices, -> { order(position: :asc) }, class_name: '::Spree::VolumePrice', through: :volume_price_models, source: :volume_prices
         base.accepts_nested_attributes_for :volume_prices, allow_destroy: true,
-          reject_if: proc { |volume_price|
-            volume_price[:amount].blank? && volume_price[:range].blank?
-          }
+          reject_if: proc { |volume_price| volume_price[:amount].blank? && volume_price[:range].blank? }
       end
 
-      def join_volume_prices(user = nil)
-        table = ::Spree::VolumePrice.arel_table
-
-        if user
-          ::Spree::VolumePrice.where(
-            (table[:variant_id].eq(id)
-              .or(table[:volume_price_model_id].in(volume_price_models.ids)))
-              .and(table[:role_id].eq(user.resolve_role.try(:id)))
-            )
-            .order(position: :asc)
-        else
-          ::Spree::VolumePrice.where(
-            (table[:variant_id]
-              .eq(id)
-              .or(table[:volume_price_model_id].in(volume_price_models.ids)))
-              .and(table[:role_id].eq(nil))
-            ).order(position: :asc)
-        end
+      def join_volume_prices(user = nil, order = nil)
+        pricing_tier_id = find_wholesaler_pricing_tier_option(order)
+        self.volume_prices.tier(pricing_tier_id, order&.store_id)
       end
 
-      # calculates the price based on quantity
       def volume_price(quantity, user = nil, order)
-        compute_store_specific_volume_price_quantities :volume_price, price, quantity, user, order
+        compute_volume_price_based_on_quantity(:volume_price, price, quantity, user, order)
       end
 
-      # return percent of earning
       def volume_price_earning_percent(quantity, user = nil)
-        compute_volume_price_quantities :volume_price_earning_percent, 0, quantity, user
+        compute_volume_price_based_on_quantity(:volume_price_earning_percent, 0, quantity, user)
       end
 
-      # return amount of earning
       def volume_price_earning_amount(quantity, user = nil)
-        compute_volume_price_quantities :volume_price_earning_amount, 0, quantity, user
+        compute_volume_price_based_on_quantity(:volume_price_earning_amount, 0, quantity, user)
       end
 
-      protected
+      private
+
+      def find_wholesaler_pricing_tier_option(order)
+        return nil unless order
+
+        wholesaler_email = if order.user&.wholesaler
+                             order.user.email
+                           elsif order.email.present?
+                             order.email
+                           end
+
+        return nil unless wholesaler_email
+
+        wholesaler = ::Spree::Wholesaler.find_by(email: wholesaler_email, status: 'active')
+        wholesaler&.pricing_tier_id
+      rescue StandardError
+        nil
+      end
+
 
       def use_master_variant_volume_pricing?
-        ::SpreeVolumePricing::Config[:use_master_variant_volume_pricing] && !(product.master.join_volume_prices.count == 0)
+        ::SpreeVolumePricing::Config[:use_master_variant_volume_pricing] && product.master.join_volume_prices.exists?
       end
 
-      def compute_volume_price_quantities(type, default_price, quantity, user)
-        volume_prices = join_volume_prices user
-        if volume_prices.count == 0
-          if use_master_variant_volume_pricing?
-            product.master.send(type, quantity, user)
-          else
-            return default_price
-          end
-        else
-          volume_prices.each do |volume_price|
-            if volume_price.include?(quantity)
-              return send "compute_#{type}".to_sym, volume_price
-            end
-          end
-
-          # No price ranges matched.
-          default_price
+      def compute_volume_price_based_on_quantity(type, default_price, quantity, user = nil, order = nil)
+        volume_prices = applicable_volume_prices(user, order)
+        volume_prices.each do |volume_price|
+          return send("compute_#{type}", volume_price) if volume_price.include?(quantity)
         end
+
+        return product.master.send(type, quantity, user) if use_master_variant_volume_pricing?
+
+        default_price
       end
 
-      def compute_store_specific_volume_price_quantities(type, default_price, quantity, user, order)
-        volume_prices = (join_volume_prices user).where(store_id: order.store_id)
-        if volume_prices.count == 0
-          if use_master_variant_volume_pricing?
-            product.master.send(type, quantity, user)
-          else
-            return default_price
-          end
-        else
-          volume_prices.each do |volume_price|
-            if volume_price.include?(quantity)
-              return send "compute_#{type}".to_sym, volume_price
-            end
-          end
-
-          # No price ranges matched.
-          default_price
-        end
+      def applicable_volume_prices(user = nil, order = nil)
+        join_volume_prices(user, order).where(store_id: order&.store_id)
       end
 
       def compute_volume_price(volume_price)
         case volume_price.discount_type
-        when 'price'
-          return volume_price.amount
-        when 'dollar'
-          return price - volume_price.amount
-        when 'percent'
-          return price * (1 - volume_price.amount)
+        when 'price' then volume_price.amount
+        when 'dollar' then price - volume_price.amount
+        when 'percent' then price * (1 - volume_price.amount)
         end
       end
 
       def compute_volume_price_earning_percent(volume_price)
         case volume_price.discount_type
-        when 'price'
-          diff = price - volume_price.amount
-          return (diff * 100 / price).round
-        when 'dollar'
-          return (volume_price.amount * 100 / price).round
-        when 'percent'
-          return (volume_price.amount * 100).round
+        when 'price'   then percent_diff(price, volume_price.amount)
+        when 'dollar'  then (volume_price.amount * 100 / price).round
+        when 'percent' then (volume_price.amount * 100).round
         end
       end
 
       def compute_volume_price_earning_amount(volume_price)
         case volume_price.discount_type
-        when 'price'
-          return price - volume_price.amount
-        when 'dollar'
-          return volume_price.amount
-        when 'percent'
-          return price - (price * (1 - volume_price.amount))
+        when 'price'   then price - volume_price.amount
+        when 'dollar'  then volume_price.amount
+        when 'percent' then price - (price * volume_price.amount)
         end
+      end
+
+      def percent_diff(original, discounted)
+        ((original - discounted) * 100 / original).round
       end
     end
   end
