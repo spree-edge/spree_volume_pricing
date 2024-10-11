@@ -1,0 +1,18 @@
+<%= render partial: 'spree/admin/shared/product_tabs', locals: { current: :variants } %>
+
+<%= render partial: 'spree/admin/shared/error_messages', locals: { target: @variant } %>
+
+<%= form_for [:admin, @product, @variant] do |f| %>
+  <div class="card mb-0">
+    <div class="card-header">
+      <h5 class="mb-0"><%= @variant.sku || @variant.options_text %></h5>
+    </div>
+    <div class="card-body" data-hook="admin_variant_edit_form">
+      <%= render partial: 'form', locals: { f: f } %>
+      <%= render partial: 'spree/admin/variants/edit_fields', locals: { f: f } %>
+    </div>
+    <div class="card-body">
+      <%= render partial: 'spree/admin/shared/edit_resource_links' %>
+    </div>
+  </div>
+<% end %>
