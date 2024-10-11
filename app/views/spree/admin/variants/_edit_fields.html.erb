@@ -5,12 +5,6 @@
         <div class="col">
           <h5><%= Spree.t(:volume_prices) %></h5>
         </div>
-        <div class="col">
-          <div id="new_add_volume_price" class="float-right">
-            <%= button_link_to Spree.t(:add_volume_price), 'javascript:;', {
-              icon: 'add.svg', :'data-target' => 'tbody#volume_prices', class: 'btn-primary spree_add_fields', id: 'add_volume_price' } %>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -28,8 +22,8 @@
           <th><%= Spree.t(:action) %></th>
         </tr>
       </thead>
-      <tbody id="volume_prices">
-        <%= f.fields_for :volume_prices, @variant.volume_prices.find_or_initialize_by(store_id: current_store.id) do |vp_form| %>
+      <tbody id="sortVert">
+        <%= f.fields_for :volume_prices, @variant.volume_prices.where(store_id: current_store.id) do |vp_form| %>
           <tr class="volume_price fields">
             <td class="form-group">
               <%= vp_form.text_field :name, size: 10, class: 'form-control' %>
@@ -38,7 +32,7 @@
 
             <td class="form-group">
               <%= error_message_on(f.object, :pricing_tier_id) %>
-              <%= vp_form.collection_select(:pricing_tier_id, Spree::PricingTier.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'select2-clear' }) %>
+              <%= vp_form.collection_select(:pricing_tier_id, Spree::PricingTier.all, :id, :name, { include_blank: Spree.t('match_choices.none') }, { class: 'form-control' }) %>
             </td>
 
             <td class="form-group">
@@ -47,7 +41,7 @@
                   ["#{Spree.t(:total_price)}", 'price'],
                   ["#{Spree.t(:percent_discount)}", 'percent'],
                   ["#{Spree.t(:price_discount)}", 'dollar']
-                ], { inlcude_blank: true }, class: 'select2' %>
+                ], { inlcude_blank: true }, class: 'form-control' %>
             </td>
             <td class="form-group">
               <%= error_message_on(f.object, :range) %>
@@ -61,15 +55,33 @@
               <%= error_message_on(f.object, :position) %>
               <%= vp_form.text_field :position, size: 3, class: 'form-control' %>
             </td>
-            <td>
-              <%= vp_form.hidden_field :store_id, value: current_store.id %>
-            </td>
+           
+            <%= vp_form.hidden_field :store_id, value: current_store.id, class: 'current-store-hidden-field' %>
             <td>
               <%= link_to_icon_remove_fields vp_form %>
             </td>
           </tr>
         <% end %>
       </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="7">
+            <div id="" class="d-flex" data-hook>
+              <%= button_link_to Spree.t(:add_volume_price), "javascript:;", { icon: 'add.svg', :'data-target' => "tbody#sortVert", class: 'btn-primary mx-auto spree_add_fields' } %>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 </div>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('.spree_add_fields').click(function(e) {
+      e.preventDefault();
+      
+      $('.current-store-hidden-field').val(<%= current_store.id %>)
+    });
+  });
+</script>
