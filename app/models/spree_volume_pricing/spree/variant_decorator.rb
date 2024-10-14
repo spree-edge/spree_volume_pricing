@@ -33,8 +33,8 @@ module SpreeVolumePricing
 
         wholesaler_email = if order.user&.wholesaler
                              order.user.email
-                           elsif order.email.present?
-                             order.email
+                           else
+                             nil
                            end
 
         return nil unless wholesaler_email
@@ -44,7 +44,6 @@ module SpreeVolumePricing
       rescue StandardError
         nil
       end
-
 
       def use_master_variant_volume_pricing?
         ::SpreeVolumePricing::Config[:use_master_variant_volume_pricing] && product.master.join_volume_prices.exists?

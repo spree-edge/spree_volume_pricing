@@ -25,7 +25,9 @@
           </tr>
         </thead>
         <tbody id="sortVert">
-          <%= f.fields_for :volume_prices, @variant.volume_prices.where(store_id: current_store.id) do |vp_form| %>
+          <% build_volume_prices = @variant.volume_prices.where(store_id: current_store.id).any? ? @variant.volume_prices.where(store_id: current_store.id) : @variant.volume_prices.where(store_id: current_store.id).build %>
+
+          <%= f.fields_for :volume_prices, build_volume_prices do |vp_form| %>
             <tr class="volume_price fields">
               <td class="form-group">
                 <%= vp_form.text_field :name, size: 10, class: 'form-control' %>
@@ -79,7 +81,7 @@
 <% end %>
 
 <script type="text/javascript">
-  $(document).ready(function() {
+  document.addEventListener("spree:load", function() {
     $('.spree_add_fields').click(function(e) {
       e.preventDefault();
       
